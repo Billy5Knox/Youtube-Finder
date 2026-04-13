@@ -1,16 +1,22 @@
-# React + Vite
+# YouTube Finder — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React SPA built with Vite. Communicates with the FastAPI backend via proxied API calls.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev     # Dev server on :5173, proxies /api and /auth to :8000
+npm run build   # Production build to dist/
+```
 
-## React Compiler
+## Structure
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `src/App.jsx` — Root component, auth state, layout
+- `src/api.js` — API client (search, playlists, sync, auth)
+- `src/components/TopBar.jsx` — Header with sync button, user info, logout
+- `src/components/SearchBar.jsx` — Search input with debounced API calls
+- `src/components/VideoCard.jsx` — Single video result card (links to YouTube)
+- `src/components/ResultsGrid.jsx` — Responsive grid of VideoCards
+- `src/components/PlaylistFilter.jsx` — Playlist filter chips
+- `src/hooks/useSearch.js` — Debounced search hook (300ms)

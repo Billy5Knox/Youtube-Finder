@@ -99,10 +99,11 @@ Single-page app with three areas:
 
 ## Tech Stack
 
-- **Backend:** Python 3.11+, FastAPI, SQLite (with FTS5), sentence-transformers (`all-MiniLM-L6-v2`), Google API Python client
-- **Frontend:** React (Vite), plain CSS or a lightweight CSS framework
+- **Backend:** Python 3.11+, FastAPI, SQLite (with FTS5), sentence-transformers (`all-MiniLM-L6-v2`), Google API Python client, python-dotenv
+- **Frontend:** React 18 (Vite), plain CSS
 - **Auth:** Google OAuth2 (read-only YouTube scope)
 - **Storage:** SQLite (single file, no external database needed)
+- **Launcher:** `start.bat` for one-click startup on Windows
 
 ## Non-Goals
 

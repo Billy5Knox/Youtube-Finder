@@ -61,9 +61,10 @@ def init_db(db_path: str) -> None:
     """)
 
     # FTS5 virtual table for full-text search
+    # video_id is UNINDEXED so it is stored (retrievable) but not tokenised for search
     conn.execute("""
         CREATE VIRTUAL TABLE IF NOT EXISTS videos_fts
-        USING fts5(video_id, title, description, channel_name, content='')
+        USING fts5(video_id UNINDEXED, title, description, channel_name)
     """)
 
     conn.commit()

@@ -5,6 +5,7 @@ import TopBar from "./components/TopBar";
 import SearchBar from "./components/SearchBar";
 import ResultsGrid from "./components/ResultsGrid";
 import PlaylistFilter from "./components/PlaylistFilter";
+import StoppedView from "./components/StoppedView";
 import "./App.css";
 
 function App() {
@@ -13,12 +14,17 @@ function App() {
   const [results, setResults] = useState([]);
   const [query, setQuery] = useState("");
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
+  const [stopped, setStopped] = useState(false);
 
   useEffect(() => {
     fetchCurrentUser()
       .then(setUser)
       .finally(() => setLoading(false));
   }, []);
+
+  if (stopped) {
+    return <StoppedView />;
+  }
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -38,7 +44,7 @@ function App() {
 
   return (
     <div className="app">
-      <TopBar user={user} />
+      <TopBar user={user} onStopped={() => setStopped(true)} />
       <main className="main-content">
         <SearchBar
           query={query}
@@ -50,7 +56,11 @@ function App() {
           selectedPlaylist={selectedPlaylist}
           setSelectedPlaylist={setSelectedPlaylist}
         />
-        <ResultsGrid results={results} query={query} />
+        <ResultsGrid
+          results={results}
+          query={query}
+          selectedPlaylist={selectedPlaylist}
+        />
       </main>
     </div>
   );

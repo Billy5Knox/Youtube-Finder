@@ -7,6 +7,7 @@ from fastapi.responses import RedirectResponse
 
 from app.config import settings
 from app.database import get_connection, init_db
+from app.shutdown import request_supervisor_shutdown
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -128,3 +129,14 @@ def logout(request: Request, response: Response):
     response = RedirectResponse(url=settings.FRONTEND_URL)
     response.delete_cookie("session_id")
     return response
+
+
+@router.post("/shutdown")
+def shutdown(request: Request, response: Response):
+    user_id = require_user(request)
+    session_id = request.cookies.get("session_id")
+    if session_id:
+        _sessions.pop(session_id, None)
+    response.delete_cookie("session_id")
+    request_supervisor_shutdown()
+    return {"status": "shutting_down"}

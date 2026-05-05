@@ -49,3 +49,36 @@ def test_request_supervisor_shutdown_handles_no_supervisor(monkeypatch, caplog):
     shutdown_module.request_supervisor_shutdown()
 
     assert any("supervisor not running" in rec.message.lower() for rec in caplog.records)
+
+
+from fastapi.testclient import TestClient
+
+from app.main import app
+from app import auth as auth_module
+
+
+def test_shutdown_endpoint_requires_auth():
+    client = TestClient(app)
+    res = client.post("/auth/shutdown")
+    assert res.status_code == 401
+
+
+def test_shutdown_endpoint_clears_session_and_calls_supervisor(monkeypatch):
+    called = []
+    monkeypatch.setattr(
+        "app.auth.request_supervisor_shutdown",
+        lambda: called.append(True),
+    )
+
+    auth_module._sessions["test-session"] = "test-user-id"
+
+    client = TestClient(app)
+    res = client.post(
+        "/auth/shutdown",
+        cookies={"session_id": "test-session"},
+    )
+
+    assert res.status_code == 200
+    assert res.json() == {"status": "shutting_down"}
+    assert called == [True]
+    assert "test-session" not in auth_module._sessions

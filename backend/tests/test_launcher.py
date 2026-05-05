@@ -104,3 +104,32 @@ def test_supervisor_detects_unexpected_child_death():
             assert child.process.poll() is not None
     finally:
         sup.stop_control_server()
+
+
+import io
+from logging.handlers import RotatingFileHandler
+
+from app.launcher import LogStreamer
+
+
+def test_log_streamer_prefixes_and_writes_file(tmp_path, capsys):
+    proc = subprocess.Popen(
+        [sys.executable, "-c", "print('hello'); print('world')"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+        text=True,
+    )
+    log_file = tmp_path / "child.log"
+    streamer = LogStreamer(name="backend", stream=proc.stdout, log_path=str(log_file))
+    streamer.start()
+    proc.wait(timeout=5.0)
+    streamer.join(timeout=2.0)
+
+    captured = capsys.readouterr().out
+    assert "[BACKEND] hello" in captured
+    assert "[BACKEND] world" in captured
+
+    contents = log_file.read_text()
+    assert "hello" in contents
+    assert "world" in contents

@@ -7,6 +7,7 @@ import sys
 import threading
 import time
 from dataclasses import dataclass, field
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -156,3 +157,40 @@ class Supervisor:
 
     def stop_control_server(self) -> None:
         self._control.stop()
+
+
+class LogStreamer:
+    def __init__(self, name: str, stream, log_path: str):
+        self._name = name
+        self._stream = stream
+        self._prefix = f"[{name.upper()}] "
+        Path(log_path).parent.mkdir(parents=True, exist_ok=True)
+        self._handler = RotatingFileHandler(
+            log_path, maxBytes=2_000_000, backupCount=3, encoding="utf-8"
+        )
+        self._thread = threading.Thread(target=self._run, daemon=True)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def join(self, timeout: float | None = None) -> None:
+        self._thread.join(timeout=timeout)
+        self._handler.close()
+
+    def _run(self) -> None:
+        try:
+            for line in self._stream:
+                line = line.rstrip("\r\n")
+                print(self._prefix + line, flush=True)
+                self._handler.emit(_make_record(self._name, line))
+        except (ValueError, OSError):
+            # stream closed during teardown
+            pass
+
+
+def _make_record(name: str, msg: str):
+    record = logging.LogRecord(
+        name=name, level=logging.INFO, pathname="", lineno=0,
+        msg=msg, args=(), exc_info=None,
+    )
+    return record

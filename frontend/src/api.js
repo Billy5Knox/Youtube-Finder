@@ -33,3 +33,23 @@ export async function triggerSync() {
   if (!res.ok) throw new Error("Sync failed");
   return res.json();
 }
+
+export async function shutdownApp() {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
+  try {
+    const res = await fetch(`${API_BASE}/auth/shutdown`, {
+      method: "POST",
+      credentials: "include",
+      signal: controller.signal,
+    });
+    return res.ok;
+  } catch (err) {
+    // Either the server died mid-flight or we timed out; treat as success
+    // since the user's intent (stop the app) has been delivered.
+    console.warn("shutdownApp: ignoring error", err);
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}

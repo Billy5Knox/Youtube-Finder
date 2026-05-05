@@ -13,5 +13,6 @@ class Settings:
     DATABASE_PATH: str = os.environ.get("DATABASE_PATH", str(BASE_DIR / "youtube_finder.db"))
     SECRET_KEY: str = os.environ.get("SECRET_KEY", "change-me-in-production")
     FRONTEND_URL: str = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+    SUPERVISOR_PORT: int = int(os.environ.get("SUPERVISOR_PORT", "8765"))
 
 settings = Settings()

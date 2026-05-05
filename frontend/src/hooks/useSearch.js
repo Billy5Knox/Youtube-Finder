@@ -9,10 +9,12 @@ export function useSearch(query, selectedPlaylist, setResults) {
       clearTimeout(timerRef.current);
     }
 
-    if (!query.trim()) {
+    if (!query.trim() && !selectedPlaylist) {
       setResults([]);
       return;
     }
+
+    const delay = query.trim() ? 300 : 0;
 
     timerRef.current = setTimeout(async () => {
       try {
@@ -21,7 +23,7 @@ export function useSearch(query, selectedPlaylist, setResults) {
       } catch (err) {
         console.error("Search error:", err);
       }
-    }, 300);
+    }, delay);
 
     return () => {
       if (timerRef.current) {

@@ -111,6 +111,47 @@ def semantic_search(
     return scored_results[:limit]
 
 
+def list_playlist_videos(
+    db_path: str,
+    user_id: str,
+    playlist_id: str,
+    limit: int = 200,
+) -> list[dict]:
+    conn = get_connection(db_path)
+    cursor = conn.execute(
+        """
+        SELECT
+            v.id as video_id,
+            v.title,
+            v.description,
+            v.channel_name,
+            v.thumbnail_url,
+            v.published_at,
+            pv.added_at
+        FROM playlist_videos pv
+        JOIN videos v ON v.id = pv.video_id
+        JOIN playlists p ON p.id = pv.playlist_id
+        WHERE pv.playlist_id = ? AND p.user_id = ?
+        ORDER BY pv.added_at DESC, pv.position ASC
+        LIMIT ?
+        """,
+        (playlist_id, user_id, limit),
+    )
+    results = []
+    for row in cursor.fetchall():
+        results.append({
+            "video_id": row["video_id"],
+            "title": row["title"],
+            "description": row["description"],
+            "channel_name": row["channel_name"],
+            "thumbnail_url": row["thumbnail_url"],
+            "published_at": row["published_at"],
+            "score": 0.0,
+        })
+    conn.close()
+    return results
+
+
 def combined_search(
     db_path: str,
     query: str,

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request, HTTPException
 from app.auth import require_user
 from app.config import settings
 from app.database import get_connection
-from app.search import keyword_search, combined_search
+from app.search import keyword_search, combined_search, list_playlist_videos
 from app.sync import sync_user_playlists
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -26,9 +26,11 @@ def search(request: Request, q: str, playlist_id: str | None = None, mode: str =
     user_id = require_user(request)
 
     if not q.strip():
-        return {"results": [], "query": q, "total": 0}
-
-    if mode == "keyword":
+        if playlist_id:
+            raw_results = list_playlist_videos(settings.DATABASE_PATH, user_id, playlist_id)
+        else:
+            return {"results": [], "query": q, "total": 0}
+    elif mode == "keyword":
         raw_results = keyword_search(settings.DATABASE_PATH, q, user_id, playlist_id)
     else:
         try:

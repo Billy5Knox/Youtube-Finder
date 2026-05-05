@@ -1,10 +1,11 @@
 // frontend/src/components/TopBar.jsx
 import { useState } from "react";
-import { triggerSync } from "../api";
+import { triggerSync, shutdownApp } from "../api";
 
-function TopBar({ user }) {
+function TopBar({ user, onStopped }) {
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(user.last_sync_at);
+  const [loggingOff, setLoggingOff] = useState(false);
 
   async function handleSync() {
     setSyncing(true);
@@ -16,6 +17,12 @@ function TopBar({ user }) {
     } finally {
       setSyncing(false);
     }
+  }
+
+  async function handleLogoff() {
+    setLoggingOff(true);
+    await shutdownApp();
+    onStopped();
   }
 
   function formatSyncTime(isoString) {
@@ -35,7 +42,7 @@ function TopBar({ user }) {
         <button
           className="sync-button"
           onClick={handleSync}
-          disabled={syncing}
+          disabled={syncing || loggingOff}
         >
           {syncing ? "Syncing..." : "Sync Now"}
         </button>
@@ -45,7 +52,13 @@ function TopBar({ user }) {
           )}
           <span className="user-name">{user.name}</span>
         </div>
-        <a href="/auth/logout" className="logout-link">Logout</a>
+        <button
+          className="logoff-button"
+          onClick={handleLogoff}
+          disabled={loggingOff}
+        >
+          {loggingOff ? "Stopping..." : "Logoff"}
+        </button>
       </div>
     </header>
   );

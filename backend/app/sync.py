@@ -5,8 +5,8 @@ from app.youtube import fetch_playlists, fetch_playlist_videos
 from app.embeddings import EmbeddingService
 
 
-def sync_user_playlists(db_path: str, user_id: str, access_token: str) -> dict:
-    playlists = fetch_playlists(access_token)
+def sync_user_playlists(db_path: str, user_id: str, access_token: str, refresh_token: str | None = None) -> dict:
+    playlists = fetch_playlists(access_token, refresh_token)
     conn = get_connection(db_path)
     embedding_service = EmbeddingService()
 
@@ -42,7 +42,7 @@ def sync_user_playlists(db_path: str, user_id: str, access_token: str) -> dict:
             continue
 
         # Fetch videos for this playlist
-        videos = fetch_playlist_videos(access_token, pl["id"])
+        videos = fetch_playlist_videos(access_token, pl["id"], refresh_token)
 
         for video in videos:
             # Upsert video

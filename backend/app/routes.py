@@ -82,7 +82,7 @@ def trigger_sync(request: Request):
     user_id = require_user(request)
     conn = get_connection(settings.DATABASE_PATH)
     user = conn.execute(
-        "SELECT access_token_encrypted FROM users WHERE id = ?", (user_id,)
+        "SELECT access_token_encrypted, refresh_token_encrypted FROM users WHERE id = ?", (user_id,)
     ).fetchone()
     conn.close()
 
@@ -90,7 +90,9 @@ def trigger_sync(request: Request):
         raise HTTPException(status_code=400, detail="No access token found. Please re-login.")
 
     access_token = user["access_token_encrypted"].decode()
-    result = sync_user_playlists(settings.DATABASE_PATH, user_id, access_token)
+    refresh_token_blob = user["refresh_token_encrypted"]
+    refresh_token = refresh_token_blob.decode() if refresh_token_blob else None
+    result = sync_user_playlists(settings.DATABASE_PATH, user_id, access_token, refresh_token)
 
     return {
         "is_syncing": False,

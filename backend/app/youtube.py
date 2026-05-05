@@ -1,14 +1,24 @@
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 
+from app.config import settings
 
-def _build_youtube_service(access_token: str):
-    credentials = Credentials(token=access_token)
+GOOGLE_TOKEN_URI = "https://oauth2.googleapis.com/token"
+
+
+def _build_youtube_service(access_token: str, refresh_token: str | None = None):
+    credentials = Credentials(
+        token=access_token,
+        refresh_token=refresh_token or None,
+        token_uri=GOOGLE_TOKEN_URI,
+        client_id=settings.GOOGLE_CLIENT_ID,
+        client_secret=settings.GOOGLE_CLIENT_SECRET,
+    )
     return build("youtube", "v3", credentials=credentials)
 
 
-def fetch_playlists(access_token: str) -> list[dict]:
-    service = _build_youtube_service(access_token)
+def fetch_playlists(access_token: str, refresh_token: str | None = None) -> list[dict]:
+    service = _build_youtube_service(access_token, refresh_token)
     playlists = []
     page_token = None
 
@@ -40,8 +50,8 @@ def fetch_playlists(access_token: str) -> list[dict]:
     return playlists
 
 
-def fetch_playlist_videos(access_token: str, playlist_id: str) -> list[dict]:
-    service = _build_youtube_service(access_token)
+def fetch_playlist_videos(access_token: str, playlist_id: str, refresh_token: str | None = None) -> list[dict]:
+    service = _build_youtube_service(access_token, refresh_token)
     videos = []
     page_token = None
 

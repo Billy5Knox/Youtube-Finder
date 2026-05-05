@@ -16,17 +16,36 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 
-def _open_browser_when_ready(repo_root: Path, url: str = "http://localhost:5173", timeout: float = 30.0) -> None:
+def _open_browser_when_ready(
+    repo_root: Path,
+    url: str = "http://localhost:5173",
+    backend_health_url: str = "http://localhost:8000/health",
+    timeout: float = 60.0,
+) -> None:
+    def _reachable(probe_url: str) -> bool:
+        try:
+            urllib.request.urlopen(probe_url, timeout=1.0)
+            return True
+        except (urllib.error.URLError, OSError):
+            return False
+
     def _wait_and_open():
         deadline = time.monotonic() + timeout
+        backend_ready = False
+        frontend_ready = False
         while time.monotonic() < deadline:
-            try:
-                urllib.request.urlopen(url, timeout=1.0)
+            if not backend_ready and _reachable(backend_health_url):
+                backend_ready = True
+            if not frontend_ready and _reachable(url):
+                frontend_ready = True
+            if backend_ready and frontend_ready:
                 webbrowser.open(url)
                 return
-            except (urllib.error.URLError, OSError):
-                time.sleep(0.5)
-        log.warning("frontend never became reachable at %s within %.0fs", url, timeout)
+            time.sleep(0.5)
+        log.warning(
+            "ready check timed out after %.0fs (backend=%s, frontend=%s)",
+            timeout, backend_ready, frontend_ready,
+        )
 
     threading.Thread(target=_wait_and_open, daemon=True).start()
 

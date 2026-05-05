@@ -194,3 +194,66 @@ def _make_record(name: str, msg: str):
         msg=msg, args=(), exc_info=None,
     )
     return record
+
+
+def _build_specs(repo_root: Path) -> list[ChildSpec]:
+    backend_dir = repo_root / "backend"
+    frontend_dir = repo_root / "frontend"
+    return [
+        ChildSpec(
+            name="backend",
+            argv=["uvicorn", "app.main:app", "--reload"],
+            cwd=str(backend_dir),
+        ),
+        ChildSpec(
+            name="frontend",
+            argv=["npm.cmd" if _IS_WINDOWS else "npm", "run", "dev"],
+            cwd=str(frontend_dir),
+        ),
+    ]
+
+
+def main(repo_root: Path | None = None) -> int:
+    logging.basicConfig(level=logging.INFO, format="[LAUNCHER] %(message)s")
+
+    if repo_root is None:
+        repo_root = Path(__file__).resolve().parents[2]
+
+    log_dir = repo_root / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    from app.config import settings
+    port = settings.SUPERVISOR_PORT
+
+    specs = _build_specs(repo_root)
+    sup = Supervisor(specs, control_port=port, response_grace=1.0)
+    sup.start_children()
+
+    streamers: list[LogStreamer] = []
+    for child in sup.children:
+        log_path = log_dir / f"{child.spec.name}.log"
+        streamer = LogStreamer(child.spec.name, child.process.stdout, str(log_path))
+        streamer.start()
+        streamers.append(streamer)
+
+    if _IS_WINDOWS:
+        signal.signal(signal.SIGBREAK, lambda *_: sup._shutdown_event.set())
+    signal.signal(signal.SIGINT, lambda *_: sup._shutdown_event.set())
+
+    log.info("supervisor running; control on 127.0.0.1:%s", port)
+    reason = sup.wait_for_shutdown(poll_interval=0.5)
+    log.info("shutting down: %s", reason)
+
+    sup.shutdown_children(signal_timeout=5.0, terminate_timeout=2.0)
+    sup.stop_control_server()
+
+    for streamer in streamers:
+        streamer.join(timeout=2.0)
+
+    rc = 0 if "control-server" in reason else 1
+    log.info("supervisor exit rc=%s", rc)
+    return rc
+
+
+if __name__ == "__main__":
+    sys.exit(main())

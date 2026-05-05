@@ -26,3 +26,7 @@ sentence-transformers/
 
 # Claude
 .claude/
+
+# Logs
+logs/*.log
+logs/*.log.*

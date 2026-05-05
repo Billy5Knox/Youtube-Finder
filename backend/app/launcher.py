@@ -6,11 +6,29 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
+import urllib.request
+import webbrowser
 from dataclasses import dataclass, field
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 log = logging.getLogger(__name__)
+
+
+def _open_browser_when_ready(repo_root: Path, url: str = "http://localhost:5173", timeout: float = 30.0) -> None:
+    def _wait_and_open():
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                urllib.request.urlopen(url, timeout=1.0)
+                webbrowser.open(url)
+                return
+            except (urllib.error.URLError, OSError):
+                time.sleep(0.5)
+        log.warning("frontend never became reachable at %s within %.0fs", url, timeout)
+
+    threading.Thread(target=_wait_and_open, daemon=True).start()
 
 
 class _ShutdownHandler(socketserver.StreamRequestHandler):
@@ -228,6 +246,7 @@ def main(repo_root: Path | None = None) -> int:
     specs = _build_specs(repo_root)
     sup = Supervisor(specs, control_port=port, response_grace=1.0)
     sup.start_children()
+    _open_browser_when_ready(repo_root)
 
     streamers: list[LogStreamer] = []
     for child in sup.children:
